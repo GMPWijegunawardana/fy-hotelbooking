@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  server:
+    build: ./server
+    ports:
+      - "5000:5000"
+    container_name: hotel_server
+    networks:
+      - hotel-network
+
+  client:
+    build: ./client
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+    container_name: hotel_client
+    networks:
+      - hotel-network
+
+networks:
+  hotel-network:
+    driver: bridge
