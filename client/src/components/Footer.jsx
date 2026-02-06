@@ -25,8 +25,8 @@ const Footer = () => {
                     <div>
                         <h4 className="text-lg font-semibold mb-4 text-primary">Contact</h4>
                         <ul className="space-y-2 text-gray-300">
-                            <li>123 Luxury Ave, Paradise City</li>
-                            <li>+1 (555) 123-4567</li>
+                            <li>No 321, Sea Street, Colombo</li>
+                            <li>+94 (702) 487 500</li>
                             <li>info@luxehotel.com</li>
                         </ul>
                     </div>

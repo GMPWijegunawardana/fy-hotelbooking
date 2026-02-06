@@ -7,8 +7,10 @@ export default {
     theme: {
         extend: {
             colors: {
-                primary: "#c0a062", // Gold-ish color for luxury feel
-                secondary: "#2c3e50", // Dark blue-gray
+                primary: "#189AB4", // Blue Grotto / Sea Teal
+                secondary: "#05445E", // Navy Blue / Deep Ocean
+                "nature-light": "#EAF6F6", // Light Aqua Mist (formerly soft mist)
+                "nature-dark": "#05445E", // Deep Ocean (formerly forest green)
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],

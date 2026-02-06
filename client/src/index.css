@@ -1,13 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+/* Fonts imported in index.html for better performance */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-  @apply font-sans antialiased text-gray-800 bg-gray-50;
+  @apply font-sans antialiased;
+  background-color: #EAF6F6; /* Light Aqua Mist */
+  color: #05445E; /* Deep Ocean */
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply font-serif;
 }

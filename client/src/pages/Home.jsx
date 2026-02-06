@@ -28,45 +28,52 @@ const Home = () => {
             <Hero />
 
             {/* Featured Rooms */}
-            <section className="py-20 bg-gray-50">
+            <section className="py-20 bg-transparent">
                 <div className="max-w-7xl mx-auto px-4">
-                    <h2 className="text-4xl font-serif font-bold text-center mb-12 text-secondary">Featured Rooms</h2>
+                    <h2 className="text-4xl font-serif font-bold text-center mb-12 text-[#05445E]">Featured Rooms</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {rooms.map(room => <RoomCard key={room.id} room={room} />)}
                     </div>
                     <div className="text-center mt-12">
-                        <Link to="/rooms" className="text-primary hover:text-secondary font-semibold border-b-2 border-primary hover:border-secondary transition">View All Rooms</Link>
+                        <Link to="/rooms" className="text-[#05445E] hover:text-[#189AB4] font-semibold border-b-2 border-[#05445E] hover:border-[#189AB4] transition">View All Rooms</Link>
                     </div>
                 </div>
             </section>
 
             {/* Featured Packages */}
-            <section className="py-20 bg-white">
+            <section className="py-20 bg-[#D4F1F4]/50 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-4">
-                    <h2 className="text-4xl font-serif font-bold text-center mb-12 text-secondary">Exclusive Packages</h2>
+                    <h2 className="text-4xl font-serif font-bold text-center mb-12 text-[#05445E]">Exclusive Packages</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {packages.map(pkg => <PackageCard key={pkg.id} pkg={pkg} />)}
                     </div>
                     <div className="text-center mt-12">
-                        <Link to="/packages" className="text-primary hover:text-secondary font-semibold border-b-2 border-primary hover:border-secondary transition">View All Packages</Link>
+                        <Link to="/packages" className="text-[#05445E] hover:text-[#189AB4] font-semibold border-b-2 border-[#05445E] hover:border-[#189AB4] transition">View All Packages</Link>
                     </div>
                 </div>
             </section>
 
-            {/* About Preview */}
-            <section className="py-20 bg-secondary text-white relative overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 relative z-10 flex flex-col md:flex-row items-center">
-                    <div className="md:w-1/2 mb-10 md:mb-0">
-                        <img src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Hotel Interior" className="rounded-lg shadow-2xl" />
-                    </div>
-                    <div className="md:w-1/2 md:pl-12 text-center md:text-left">
-                        <h2 className="text-4xl font-serif font-bold mb-6 text-primary">Our Story</h2>
-                        <p className="text-gray-300 mb-8 leading-relaxed">
-                            Nestled in the heart of paradise, LuxeHotel has been defining luxury for over 20 years.
-                            We believe in creating moments that last a lifetime, blending world-class hospitality with the serene beauty of nature.
-                        </p>
-                        <Link to="/about" className="bg-primary text-white px-8 py-3 rounded hover:bg-white hover:text-primary transition">Discover More</Link>
-                    </div>
+            {/* Ocean Video Section */}
+            <section className="relative h-[60vh] overflow-hidden flex items-center justify-center bg-black">
+                <video
+                    className="absolute z-0 w-auto min-w-full min-h-full max-w-none opacity-60"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                >
+                    <source src="https://videos.pexels.com/video-files/10593002/10593002-uhd_2560_1440_30fps.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                </video>
+                <div className="absolute inset-0 bg-black/40 z-10" />
+                <div className="relative z-20 text-center text-white px-4">
+                    <h2 className="text-4xl md:text-6xl font-serif font-bold mb-4 drop-shadow-md">Serenity by the Sea</h2>
+                    <p className="text-xl md:text-2xl mb-8 font-light max-w-2xl mx-auto drop-shadow-md">
+                        Let the sound of the waves wash away your worries. Experience the ultimate relaxation at our oceanfront paradise.
+                    </p>
+                    <Link to="/contact" className="bg-white text-secondary px-8 py-3 rounded-full hover:bg-primary hover:text-white transition duration-300 font-semibold shadow-lg">
+                        Book Your Escape
+                    </Link>
                 </div>
             </section>
         </div>

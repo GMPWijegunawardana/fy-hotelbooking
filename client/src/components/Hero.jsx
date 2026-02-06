@@ -2,22 +2,28 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Image Sources: Unsplash & Pexels
+// Image Sources: Vibrant Luxury Themes
+const IMAGE_1 = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'; // Vibrant Luxury Hotel Exterior (Sunset)
+const IMAGE_2 = 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'; // Luxury Room with Ocean View
+const IMAGE_3 = 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'; // Infinity Pool at Sunset
+
 const slides = [
     {
-        type: 'video',
-        src: 'https://videos.pexels.com/video-files/3209663/3209663-uhd_2560_1440_25fps.mp4',
+        type: 'image',
+        src: IMAGE_1,
         title: 'Welcome to Paradise',
         subtitle: 'Experience luxury, comfort, and unforgettable moments at LuxeHotel.'
     },
     {
         type: 'image',
-        src: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
+        src: IMAGE_2,
         title: 'Unwind in Style',
         subtitle: 'Relax in our world-class spa and infinity pools.'
     },
     {
         type: 'image',
-        src: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
+        src: IMAGE_3,
         title: 'Exquisite Dining',
         subtitle: 'Savor gourmet flavors from around the globe.'
     }
@@ -30,7 +36,7 @@ const Hero = () => {
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrent((prev) => (prev + 1) % slides.length);
-        }, 3000); // 3 seconds per slide
+        }, 3000); // 3 seconds per slide per user request
         return () => clearInterval(timer);
     }, []);
 
@@ -39,27 +45,17 @@ const Hero = () => {
             <AnimatePresence mode='wait'>
                 <motion.div
                     key={current}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
+                    initial={{ opacity: 0, scale: 1 }}
+                    animate={{ opacity: 1, scale: 1.1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.5 }}
-                    className="absolute inset-0 z-0"
+                    transition={{ duration: 3, ease: "linear" }} // Smooth 3s zoom and fade
+                    className="absolute inset-0 z-0 bg-cover bg-center"
+                    style={{ backgroundImage: `url("${slides[current].src}")` }}
                 >
-                    {slides[current].type === 'video' ? (
-                        <video
-                            src={slides[current].src}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover opacity-60"
-                        />
-                    ) : (
-                        <div
-                            className="w-full h-full bg-cover bg-center opacity-60"
-                            style={{ backgroundImage: `url("${slides[current].src}")` }}
-                        />
-                    )}
+                    {/* Dark Overlay inside the motion div to scale with it or separate if preferred. 
+                        Keeping separate for static overlay is usually better, but here we just replace the content.
+                    */}
+                    <div className="absolute inset-0 bg-black/40" />
                 </motion.div>
             </AnimatePresence>
 
