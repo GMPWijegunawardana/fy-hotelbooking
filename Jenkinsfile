@@ -1,67 +1,122 @@
 pipeline {
     agent any
-   
-    environment{
-        SCANNER_HOME= tool 'sonar-scanner'
+
+    tools {
+        nodejs "nodejs"
+    }
+
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+        BACKEND_IMAGE = "manishapasandul/hotel-backend"
+        FRONTEND_IMAGE = "manishapasandul/hotel-frontend"
+        GITOPS_REPO = "https://github.com/GMPWijegunawardana/fy-hotelbooking-gitops.git"
+        SONAR_URL = "http://<JENKINS-IP>:9000"
+        SONAR_TOKEN = credentials('sonar-token')
     }
 
     stages {
-        stage('git-checkout') {
+
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/jaiswaladi246/to-do-app.git'
+                git branch: 'main',
+                url: 'https://github.com/GMPWijegunawardana/fy-hotelbooking.git'
             }
         }
 
-    stage('Sonar Analysis') {
+        stage('Create Image Tag') {
             steps {
-                   sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=URL_OF_SONARQUBE -Dsonar.login=TOKEN_OF_SONARQUBE -Dsonar.projectName=to-do-app \
-                   -Dsonar.sources=. \
-                   -Dsonar.projectKey=to-do-app '''
-               }
-            }
-           
-		stage('OWASP Dependency Check') {
-            steps {
-               dependencyCheck additionalArguments: '--scan ./', odcInstallation: 'DP'
-                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-     
-
-         stage('Docker Build') {
-            steps {
-               script{
-                   withDockerRegistry(credentialsId: '9ea0c4b0-721f-4219-be62-48a976dbeec0') {
-                    sh "docker build -t  todoapp:latest -f docker/Dockerfile . "
-                    sh "docker tag todoapp:latest username/todoapp:latest "
-                 }
-               }
+                script {
+                    IMAGE_TAG = "${BUILD_NUMBER}"
+                }
             }
         }
 
-        stage('Docker Push') {
+        // ---------- SONARQUBE ----------
+        stage('SonarQube Scan') {
             steps {
-               script{
-                   withDockerRegistry(credentialsId: '9ea0c4b0-721f-4219-be62-48a976dbeec0') {
-                    sh "docker push  username/todoapp:latest "
-                 }
-               }
-            }
-        }
-        stage('trivy') {
-            steps {
-               sh " trivy username/todoapp:latest"
-            }
-        }
-		stage('Deploy to Docker') {
-            steps {
-               script{
-                   withDockerRegistry(credentialsId: '9ea0c4b0-721f-4219-be62-48a976dbeec0') {
-                    sh "docker run -d --name to-do-app -p 4000:4000 username/todoapp:latest "
-                 }
-               }
+                sh """
+                $SCANNER_HOME/bin/sonar-scanner \
+                -Dsonar.projectKey=luxehotel \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=$SONAR_URL \
+                -Dsonar.login=$SONAR_TOKEN
+                """
             }
         }
 
+        // ---------- OWASP DEP CHECK ----------
+        stage('OWASP Dependency Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./',
+                odcInstallation: 'Default'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+
+        // ---------- BUILD DOCKER ----------
+        stage('Build Backend Image') {
+            steps {
+                sh "docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./server"
+            }
+        }
+
+        stage('Build Frontend Image') {
+            steps {
+                sh "docker build -t $FRONTEND_IMAGE:$IMAGE_TAG ./client"
+            }
+        }
+
+        // ---------- TRIVY SCAN ----------
+        stage('Trivy Scan Backend') {
+            steps {
+                sh "trivy image $BACKEND_IMAGE:$IMAGE_TAG"
+            }
+        }
+
+        stage('Trivy Scan Frontend') {
+            steps {
+                sh "trivy image $FRONTEND_IMAGE:$IMAGE_TAG"
+            }
+        }
+
+        // ---------- PUSH DOCKER ----------
+        stage('Push Images') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+                    sh "echo $PASS | docker login -u $USER --password-stdin"
+                    sh "docker push $BACKEND_IMAGE:$IMAGE_TAG"
+                    sh "docker push $FRONTEND_IMAGE:$IMAGE_TAG"
+                }
+            }
+        }
+
+        // ---------- UPDATE GITOPS ----------
+        stage('Update GitOps Repo') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'gitops-creds',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
+
+                    sh """
+                    git clone https://$USER:$PASS@github.com/GMPWijegunawardana/fy-hotelbooking-gitops.git
+                    cd fy-hotelbooking-gitops/dev
+
+                    sed -i "s|hotel-backend:.*|hotel-backend:$IMAGE_TAG|" backend-deploymen.yaml
+                    sed -i "s|hotel-frontend:.*|hotel-frontend:$IMAGE_TAG|" frontend-deployment.yaml
+
+                    git config user.email "jenkins@luxehotel.com"
+                    git config user.name "Jenkins"
+                    git commit -am "CI: Update images to $IMAGE_TAG"
+                    git push
+                    """
+                }
+            }
+        }
     }
 }
