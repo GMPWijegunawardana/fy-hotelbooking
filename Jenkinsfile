@@ -7,94 +7,125 @@ pipeline {
 
     environment {
         SCANNER_HOME = tool 'sonar-scanner'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+
         BACKEND_IMAGE = "manishapasandul/hotel-backend"
         FRONTEND_IMAGE = "manishapasandul/hotel-frontend"
+
         GITOPS_REPO = "https://github.com/GMPWijegunawardana/fy-hotelbooking-gitops.git"
+
         SONAR_URL = "http://<JENKINS-IP>:9000"
         SONAR_TOKEN = credentials('sonar-token')
     }
 
     stages {
 
-        stage('Checkout Code') {
+        stage('Checkout Source Code') {
             steps {
                 git branch: 'main',
                 url: 'https://github.com/GMPWijegunawardana/fy-hotelbooking.git'
             }
         }
 
-        stage('Create Image Tag') {
+        stage('Set Image Tag') {
             steps {
                 script {
-                    IMAGE_TAG = "${BUILD_NUMBER}"
+                    echo "Using image tag: ${IMAGE_TAG}"
                 }
             }
         }
 
-        // ---------- SONARQUBE ----------
-        stage('SonarQube Scan') {
+        // ================= SONARQUBE =================
+        stage('SonarQube Analysis') {
             steps {
-                sh """
-                $SCANNER_HOME/bin/sonar-scanner \
-                -Dsonar.projectKey=luxehotel \
-                -Dsonar.sources=. \
-                -Dsonar.host.url=$SONAR_URL \
-                -Dsonar.login=$SONAR_TOKEN
-                """
+                withSonarQubeEnv('sonar-server') {
+                    sh """
+                    $SCANNER_HOME/bin/sonar-scanner \
+                    -Dsonar.projectKey=hotelbooking \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=$SONAR_URL \
+                    -Dsonar.login=$SONAR_TOKEN
+                    """
+                }
             }
         }
 
-        // ---------- OWASP DEP CHECK ----------
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ================= OWASP =================
         stage('OWASP Dependency Check') {
             steps {
-                dependencyCheck additionalArguments: '--scan ./',
-                odcInstallation: 'Default'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                dependencyCheck additionalArguments: '''
+                    --scan ./ 
+                    --format XML 
+                    --out dependency-report
+                ''',
+                odcInstallation: 'OWASP-DC'
+
+                dependencyCheckPublisher pattern: 'dependency-report/dependency-check-report.xml'
             }
         }
 
-        // ---------- BUILD DOCKER ----------
+        // ================= DOCKER BUILD =================
         stage('Build Backend Image') {
             steps {
-                sh "docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./server"
+                sh """
+                docker build -t $BACKEND_IMAGE:$IMAGE_TAG ./server
+                """
             }
         }
 
         stage('Build Frontend Image') {
             steps {
-                sh "docker build -t $FRONTEND_IMAGE:$IMAGE_TAG ./client"
+                sh """
+                docker build -t $FRONTEND_IMAGE:$IMAGE_TAG ./client
+                """
             }
         }
 
-        // ---------- TRIVY SCAN ----------
+        // ================= TRIVY SCAN =================
         stage('Trivy Scan Backend') {
             steps {
-                sh "trivy image $BACKEND_IMAGE:$IMAGE_TAG"
+                sh """
+                trivy image --exit-code 1 --severity HIGH,CRITICAL $BACKEND_IMAGE:$IMAGE_TAG
+                """
             }
         }
 
         stage('Trivy Scan Frontend') {
             steps {
-                sh "trivy image $FRONTEND_IMAGE:$IMAGE_TAG"
+                sh """
+                trivy image --exit-code 1 --severity HIGH,CRITICAL $FRONTEND_IMAGE:$IMAGE_TAG
+                """
             }
         }
 
-        // ---------- PUSH DOCKER ----------
-        stage('Push Images') {
+        // ================= PUSH DOCKER =================
+        stage('Push Images to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {
-                    sh "echo $PASS | docker login -u $USER --password-stdin"
-                    sh "docker push $BACKEND_IMAGE:$IMAGE_TAG"
-                    sh "docker push $FRONTEND_IMAGE:$IMAGE_TAG"
+
+                    sh """
+                    echo $PASS | docker login -u $USER --password-stdin
+
+                    docker push $BACKEND_IMAGE:$IMAGE_TAG
+                    docker push $FRONTEND_IMAGE:$IMAGE_TAG
+                    """
                 }
             }
         }
 
-        // ---------- UPDATE GITOPS ----------
+        // ================= UPDATE GITOPS =================
         stage('Update GitOps Repo') {
             steps {
                 withCredentials([usernamePassword(
@@ -104,19 +135,32 @@ pipeline {
                 )]) {
 
                     sh """
-                    git clone https://$USER:$PASS@github.com/GMPWijegunawardana/fy-hotelbooking-gitops.git
-                    cd fy-hotelbooking-gitops/dev
+                    rm -rf gitops-repo
+                    git clone https://$USER:$PASS@github.com/GMPWijegunawardana/fy-hotelbooking-gitops.git gitops-repo
 
-                    sed -i "s|hotel-backend:.*|hotel-backend:$IMAGE_TAG|" backend-deploymen.yaml
-                    sed -i "s|hotel-frontend:.*|hotel-frontend:$IMAGE_TAG|" frontend-deployment.yaml
+                    cd gitops-repo/dev
 
-                    git config user.email "jenkins@luxehotel.com"
-                    git config user.name "Jenkins"
-                    git commit -am "CI: Update images to $IMAGE_TAG"
-                    git push
+                    sed -i "s|image: $BACKEND_IMAGE:.*|image: $BACKEND_IMAGE:$IMAGE_TAG|g" backend-deployment.yaml
+                    sed -i "s|image: $FRONTEND_IMAGE:.*|image: $FRONTEND_IMAGE:$IMAGE_TAG|g" frontend-deployment.yaml
+
+                    git config user.email "jenkins@ci-cd.com"
+                    git config user.name "Jenkins CI"
+
+                    git add .
+                    git commit -m "CI Update: backend & frontend images -> $IMAGE_TAG" || echo "No changes to commit"
+                    git push origin main
                     """
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ CI Pipeline completed successfully"
+        }
+        failure {
+            echo "❌ CI Pipeline failed — check logs"
         }
     }
 }
