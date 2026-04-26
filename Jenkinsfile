@@ -20,12 +20,13 @@ pipeline {
 
     stages {
 
-        stage('Checkout Source Code') {
+       stage('Checkout Code') {
             steps {
                 git branch: 'main',
+                credentialsId: 'github-token',
                 url: 'https://github.com/GMPWijegunawardana/fy-hotelbooking.git'
-            }
-        }
+    }
+}
 
         stage('Set Image Tag') {
             steps {
