@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import PackageCard from '../components/PackageCard';
+import API_BASE_URL from '../config/api';
 
 const Packages = () => {
     const [packages, setPackages] = useState([]);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/packages')
-            .then(res => setPackages(res.data))
-            .catch(err => console.error(err));
+        fetch(`${API_BASE_URL}/api/packages`)
+            .then(res => res.json())
+            .then(data => setPackages(data))
+            .catch(err => console.error("Error fetching packages:", err));
     }, []);
 
     return (

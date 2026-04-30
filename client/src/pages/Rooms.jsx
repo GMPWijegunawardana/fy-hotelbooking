@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import RoomCard from '../components/RoomCard';
 import { motion } from 'framer-motion';
+import API_BASE_URL from '../config/api';
 
 const Rooms = () => {
     const [rooms, setRooms] = useState([]);
     const [filterPrice, setFilterPrice] = useState(1000);
 
     useEffect(() => {
-        axios.get('http://localhost:5000/api/rooms')
-            .then(res => setRooms(res.data))
-            .catch(err => console.error(err));
+        fetch(`${API_BASE_URL}/api/rooms`)
+            .then(res => res.json())
+            .then(data => setRooms(data))
+            .catch(err => console.error("Error fetching rooms:", err));
     }, []);
 
     const filteredRooms = rooms.filter(room => room.price <= filterPrice);
@@ -40,10 +41,7 @@ const Rooms = () => {
                     </div>
                 </div>
 
-                <motion.div
-                    layout
-                    className="grid grid-cols-1 md:grid-cols-3 gap-8"
-                >
+                <motion.div layout className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {filteredRooms.map(room => (
                         <RoomCard key={room.id} room={room} />
                     ))}

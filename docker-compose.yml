@@ -10,7 +10,8 @@ services:
       - hotel-network
 
   client:
-    build: ./client
+    build:
+      context: ./client
     ports:
       - "3000:80"
     depends_on:
