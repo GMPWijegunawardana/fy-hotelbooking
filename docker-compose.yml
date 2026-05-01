@@ -1,23 +1,27 @@
+version: "3.8"
+
 services:
   backend:
-    container_name: hotel-backend
     build:
       context: ./server
+    container_name: hotel-backend
     ports:
       - "5000:5000"
     networks:
       - hotel-network
+    restart: always
 
   frontend:
-    container_name: hotel-frontend
     build:
       context: ./client
+    container_name: hotel-frontend
     ports:
       - "80:80"
     depends_on:
       - backend
     networks:
       - hotel-network
+    restart: always
 
 networks:
   hotel-network:
