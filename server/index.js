@@ -57,6 +57,13 @@ const getPackages = () => {
 };
 
 // ---------------- API ROUTES ---------------- //
+app.get('/', (req, res) => {
+    res.json({
+        status: "OK",
+        message: "Hotel Booking API is running successfully. Access endpoints at /api/rooms or /api/packages."
+    });
+});
+
 app.get('/api/rooms', (req, res) => {
     const rooms = getRooms();
     res.json(rooms);
