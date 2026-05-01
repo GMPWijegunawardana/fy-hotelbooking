@@ -1,23 +1,21 @@
 services:
-  frontend:
-    container_name: hotel-frontend
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - hotel-network
-
   backend:
     container_name: hotel-backend
     build:
       context: ./server
-      dockerfile: Dockerfile
     ports:
       - "5000:5000"
+    networks:
+      - hotel-network
+
+  frontend:
+    container_name: hotel-frontend
+    build:
+      context: ./client
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
     networks:
       - hotel-network
 
