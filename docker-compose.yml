@@ -1,26 +1,23 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  server:
-    build: ./server
+
+  backend:
+    build:
+      context: ./server
+    container_name: hotel-backend
     ports:
       - "5000:5000"
-    container_name: hotel_server
-    volumes:
-      - ./server/data:/app/data
-    networks:
-      - hotel-network
+    environment:
+      - NODE_ENV=production
+    restart: always
 
-  client:
-    build: ./client
+  frontend:
+    build:
+      context: ./client
+    container_name: hotel-frontend
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
-      - server
-    container_name: hotel_client
-    networks:
-      - hotel-network
-
-networks:
-  hotel-network:
-    driver: bridge
+      - backend
+    restart: always
