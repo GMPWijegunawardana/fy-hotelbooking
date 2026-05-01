@@ -6,25 +6,32 @@ const fs = require('fs');
 const app = express();
 const PORT = 5000;
 
-// Enable CORS for all origins (frontend in Docker/CI/CD can access backend)
+// ---------------- CORS (CI/CD SAFE) ---------------- //
 app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"]
 }));
 
-// Enable JSON parsing
 app.use(express.json());
 
-// ----------- Data Loaders ----------- //
+// ---------------- FIX: SAFE DATA PATH ---------------- //
+// Important for Docker volume compatibility
+
+const dataPath = (file) => path.join(__dirname, 'data', file);
+
+// ---------------- DATA LOADERS ---------------- //
 const getRooms = () => {
-    const filePath = path.join(__dirname, 'data', 'rooms.json');
-    if (!fs.existsSync(filePath)) {
-        console.error("Rooms file not found:", filePath);
-        return [];
-    }
+    const filePath = dataPath('rooms.json');
+
     try {
-        const data = fs.readFileSync(filePath);
+        if (!fs.existsSync(filePath)) {
+            console.error("Rooms file missing:", filePath);
+            return [];
+        }
+
+        const data = fs.readFileSync(filePath, 'utf-8');
         return JSON.parse(data);
+
     } catch (error) {
         console.error("Error reading rooms.json:", error);
         return [];
@@ -32,42 +39,43 @@ const getRooms = () => {
 };
 
 const getPackages = () => {
-    const filePath = path.join(__dirname, 'data', 'packages.json');
-    if (!fs.existsSync(filePath)) {
-        console.error("Packages file not found:", filePath);
-        return [];
-    }
+    const filePath = dataPath('packages.json');
+
     try {
-        const data = fs.readFileSync(filePath);
+        if (!fs.existsSync(filePath)) {
+            console.error("Packages file missing:", filePath);
+            return [];
+        }
+
+        const data = fs.readFileSync(filePath, 'utf-8');
         return JSON.parse(data);
+
     } catch (error) {
         console.error("Error reading packages.json:", error);
         return [];
     }
 };
 
-// ----------- API Routes ----------- //
+// ---------------- API ROUTES ---------------- //
 app.get('/api/rooms', (req, res) => {
-    try {
-        const rooms = getRooms();
-        res.json(rooms);
-    } catch (error) {
-        console.error("Error sending rooms:", error);
-        res.status(500).json({ message: "Error loading rooms data" });
-    }
+    const rooms = getRooms();
+    res.json(rooms);
 });
 
 app.get('/api/packages', (req, res) => {
-    try {
-        const packages = getPackages();
-        res.json(packages);
-    } catch (error) {
-        console.error("Error sending packages:", error);
-        res.status(500).json({ message: "Error loading packages data" });
-    }
+    const packages = getPackages();
+    res.json(packages);
 });
 
-// ----------- Start Server ----------- //
-app.listen(PORT, () => {
-    console.log(`Server running in container on http://0.0.0.0:${PORT}`);
+// ---------------- HEALTH CHECK (CI/CD BEST PRACTICE) ---------------- //
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: "OK",
+        message: "Server running successfully"
+    });
+});
+
+// ---------------- START SERVER ---------------- //
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

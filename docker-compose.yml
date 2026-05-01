@@ -6,12 +6,13 @@ services:
     ports:
       - "5000:5000"
     container_name: hotel_server
+    volumes:
+      - ./server/data:/app/data
     networks:
       - hotel-network
 
   client:
-    build:
-      context: ./client
+    build: ./client
     ports:
       - "3000:80"
     depends_on:
