@@ -67,7 +67,7 @@ pipeline {
                         --scan . \
                         --format HTML \
                         --out dependency-check-report \
-                        --nvdApiKey ${NVD_KEY} \
+                        --noupdate \
                         --data /var/lib/jenkins/.dependency-check || true
                         """
                     }
