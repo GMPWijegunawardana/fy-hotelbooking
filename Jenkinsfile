@@ -120,30 +120,33 @@ pipeline {
             }
         }
 
-        stage('Deploy Containers Locally') {
+        stage('Update GitOps Repo') {
             steps {
-                sh """
-                # Clean up old containers
-                docker rm -f hotel-frontend hotel-backend || true
-
-                # Create network if not exists
-                docker network create hotel-network || true
-
-                # Run Backend
-                docker run -d \
-                    --name hotel-backend \
-                    --network hotel-network \
-                    -p 5000:5000 \
-                    ${DOCKER_IMAGE_BASE}-backend:${BUILD_NUMBER}
-
-                # Run Frontend
-                docker run -d \
-                    --name hotel-frontend \
-                    --network hotel-network \
-                    -p 80:80 \
-                    -e BACKEND_URL=http://hotel-backend:5000 \
-                    ${DOCKER_IMAGE_BASE}-frontend:${BUILD_NUMBER}
-                """
+                withCredentials([usernamePassword(
+                    credentialsId: 'github-token',
+                    usernameVariable: 'GIT_USER',
+                    passwordVariable: 'GIT_PASS'
+                )]) {
+                    sh """
+                    # Clean up old gitops-repo folder if it exists from previous builds
+                    rm -rf gitops-repo || true
+                    
+                    # Clone the GitOps repository
+                    git clone https://\${GIT_USER}:\${GIT_PASS}@github.com/GMPWijegunawardana/fy-hotelbooking-gitops.git gitops-repo
+                    cd gitops-repo
+                    
+                    # Update image tags in deployment YAMLs using sed
+                    sed -i "s|image: manishapasandul/hotel-booking-frontend:.*|image: manishapasandul/hotel-booking-frontend:\${BUILD_NUMBER}|g" dev/frontend-deployment.yaml
+                    sed -i "s|image: manishapasandul/hotel-booking-backend:.*|image: manishapasandul/hotel-booking-backend:\${BUILD_NUMBER}|g" dev/backend-deployment.yaml
+                    
+                    # Commit and push
+                    git config user.email "jenkins@hotelbooking.com"
+                    git config user.name "Jenkins CI"
+                    git add dev/frontend-deployment.yaml dev/backend-deployment.yaml
+                    git commit -m "chore: deploy images from build \${BUILD_NUMBER} [skip ci]" || echo "No changes to commit"
+                    git push origin main
+                    """
+                }
             }
         }
 
